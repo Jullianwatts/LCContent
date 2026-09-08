@@ -133,7 +133,7 @@ StatusCode ConeBasedMergingAlgorithm::Run() {
                                                    : pBestParentCluster->GetInitialDirection());
 
         mergedHadronicEnergy = LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(
-            pandora::HADRONIC, parentDirection, mergedHadronicEnergy);
+            this->GetPandora(), m_thetaEnergyCorrectionName, pandora::HADRONIC, parentDirection, mergedHadronicEnergy);
         addedHadronicEnergy = std::max(0.f, mergedHadronicEnergy - parentHadronicEnergy);
       }
 
@@ -318,6 +318,10 @@ StatusCode ConeBasedMergingAlgorithm::ReadSettings(const TiXmlHandle xmlHandle) 
   PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
                                   XmlHelper::ReadValue(xmlHandle, "UseCorrectedHadronicEnergyForTrackComparison",
                                                        m_useCorrectedHadronicEnergyForTrackComparison));
+
+  PANDORA_RETURN_RESULT_IF_AND_IF(
+      STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
+      XmlHelper::ReadValue(xmlHandle, "ThetaEnergyCorrectionName", m_thetaEnergyCorrectionName));
 
   PANDORA_RETURN_RESULT_IF_AND_IF(
       STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,

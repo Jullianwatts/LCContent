@@ -131,7 +131,8 @@ StatusCode ProximityBasedMergingAlgorithm::Run() {
                                                      : pParentCluster->GetInitialDirection());
 
           clusterEnergySum = LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(
-              pandora::HADRONIC, parentDirection, parentHadronicEnergy + daughterHadronicEnergy);
+              this->GetPandora(), m_thetaEnergyCorrectionName, pandora::HADRONIC, parentDirection,
+              parentHadronicEnergy + daughterHadronicEnergy);
         }
 
         const float chi((clusterEnergySum - trackEnergySum) / sigmaE);
@@ -339,6 +340,10 @@ StatusCode ProximityBasedMergingAlgorithm::ReadSettings(const TiXmlHandle xmlHan
   PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
                                   XmlHelper::ReadValue(xmlHandle, "UseCorrectedHadronicEnergyForTrackComparison",
                                                        m_useCorrectedHadronicEnergyForTrackComparison));
+
+  PANDORA_RETURN_RESULT_IF_AND_IF(
+      STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
+      XmlHelper::ReadValue(xmlHandle, "ThetaEnergyCorrectionName", m_thetaEnergyCorrectionName));
 
   PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
                                   XmlHelper::ReadValue(xmlHandle, "NGenericDistanceLayers", m_nGenericDistanceLayers));

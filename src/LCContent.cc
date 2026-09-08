@@ -266,8 +266,8 @@ pandora::StatusCode LCContent::RegisterNonLinearityEnergyCorrection(
       new lc_content::LCEnergyCorrectionPlugins::NonLinearityCorrection(thetaBinEdges, energyBinEdges, scaleFactors)));
 
   if (pandora::STATUS_CODE_SUCCESS == statusCode)
-    lc_content::LCEnergyCorrectionPlugins::RegisterThetaEnergyCorrection(name, energyCorrectionType, thetaBinEdges,
-                                                                         energyBinEdges, scaleFactors);
+    lc_content::LCEnergyCorrectionPlugins::RegisterThetaEnergyCorrection(pandora, name, energyCorrectionType,
+                                                                         thetaBinEdges, energyBinEdges, scaleFactors);
 
   return statusCode;
 }

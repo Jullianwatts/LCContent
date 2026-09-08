@@ -13,6 +13,7 @@
 #include "LCPlugins/LCEnergyCorrectionPlugins.h"
 
 #include <map>
+#include <tuple>
 
 using namespace pandora;
 
@@ -20,7 +21,7 @@ namespace lc_content {
 
 namespace {
 
-  typedef std::pair<std::string, EnergyCorrectionType> ThetaEnergyCorrectionKey;
+  typedef std::tuple<const Pandora*, std::string, EnergyCorrectionType> ThetaEnergyCorrectionKey;
   typedef std::map<ThetaEnergyCorrectionKey, LCEnergyCorrectionPlugins::ThetaEnergyTable> ThetaEnergyCorrectionTableMap;
 
   ThetaEnergyCorrectionTableMap& GetThetaEnergyCorrectionTableMap() {
@@ -104,7 +105,7 @@ float LCEnergyCorrectionPlugins::ThetaEnergyTable::GetCorrection(const float the
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void LCEnergyCorrectionPlugins::RegisterThetaEnergyCorrection(const std::string& name,
+void LCEnergyCorrectionPlugins::RegisterThetaEnergyCorrection(const Pandora& pandora, const std::string& name,
                                                               const EnergyCorrectionType energyCorrectionType,
                                                               const FloatVector& thetaBinEdges,
                                                               const FloatVector& energyBinEdges,
@@ -112,28 +113,32 @@ void LCEnergyCorrectionPlugins::RegisterThetaEnergyCorrection(const std::string&
   if (!ThetaEnergyTable::IsValid(thetaBinEdges, energyBinEdges, scaleFactors))
     throw StatusCodeException(STATUS_CODE_INVALID_PARAMETER);
 
-  GetThetaEnergyCorrectionTableMap()[ThetaEnergyCorrectionKey(name, energyCorrectionType)] =
+  GetThetaEnergyCorrectionTableMap()[ThetaEnergyCorrectionKey(&pandora, name, energyCorrectionType)] =
       ThetaEnergyTable(thetaBinEdges, energyBinEdges, scaleFactors);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-float LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(const EnergyCorrectionType energyCorrectionType,
+float LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(const Pandora& pandora, const std::string& name,
+                                                               const EnergyCorrectionType energyCorrectionType,
                                                                const CartesianVector& direction, const float energy) {
+  if (name.empty())
+    return energy;
+
   if (direction.GetMagnitude() < std::numeric_limits<float>::epsilon())
+    return energy;
+
+  const ThetaEnergyCorrectionTableMap& thetaEnergyCorrectionTableMap(GetThetaEnergyCorrectionTableMap());
+  const ThetaEnergyCorrectionTableMap::const_iterator iter(
+      thetaEnergyCorrectionTableMap.find(ThetaEnergyCorrectionKey(&pandora, name, energyCorrectionType)));
+
+  if (thetaEnergyCorrectionTableMap.end() == iter)
     return energy;
 
   const float cosTheta(std::max(-1.f, std::min(1.f, direction.GetCosOpeningAngle(CartesianVector(0.f, 0.f, 1.f)))));
   const float theta(std::acos(cosTheta));
 
-  for (const ThetaEnergyCorrectionTableMap::value_type& mapEntry : GetThetaEnergyCorrectionTableMap()) {
-    if (mapEntry.first.second != energyCorrectionType)
-      continue;
-
-    return energy * mapEntry.second.GetCorrection(theta, energy);
-  }
-
-  return energy;
+  return energy * iter->second.GetCorrection(theta, energy);
 }
 
 LCEnergyCorrectionPlugins::NonLinearityCorrection::NonLinearityCorrection(

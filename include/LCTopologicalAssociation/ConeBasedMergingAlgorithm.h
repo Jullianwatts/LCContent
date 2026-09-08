@@ -10,6 +10,8 @@
 
 #include "Pandora/Algorithm.h"
 
+#include <string>
+
 namespace pandora {
 class ClusterFitResult;
 }
@@ -75,6 +77,7 @@ private:
   float m_maxTrackClusterChi;        ///< Max no. standard deviations between clusters and associated track energies
   float m_maxTrackClusterDChi2; ///< Max diff between chi2 using parent+daughter energies and that using only parent
   bool m_useCorrectedHadronicEnergyForTrackComparison; ///< Whether to use corrected hadronic energy in track checks
+  std::string m_thetaEnergyCorrectionName; ///< Name of the registered theta-energy correction used in track checks
 
   float m_minCosConeAngleWrtRadial;  ///< Min cosine of angle between cone and radial direction
   float m_cosConeAngleWrtRadialCut1; ///< 1st pair of cuts: Min cosine of angle between cone and radial direction

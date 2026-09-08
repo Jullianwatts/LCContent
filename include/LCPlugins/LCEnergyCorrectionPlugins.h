@@ -14,7 +14,8 @@
 
 namespace pandora {
 class CartesianVector;
-}
+class Pandora;
+} // namespace pandora
 
 namespace lc_content {
 
@@ -89,28 +90,32 @@ public:
   /**
    *  @brief  Record a registered theta-energy correction table for direct candidate-energy evaluation
    *
+   *  @param  pandora the pandora instance with which the energy correction plugin is registered
    *  @param  name the name/label associated with the energy correction plugin
    *  @param  energyCorrectionType the energy correction type
    *  @param  thetaBinEdges the theta bin edges for the 2D lookup
    *  @param  energyBinEdges the energy bin edges for the 2D lookup
    *  @param  scaleFactors the row-major correction factors for the 2D lookup
    */
-  static void RegisterThetaEnergyCorrection(const std::string& name,
+  static void RegisterThetaEnergyCorrection(const pandora::Pandora& pandora, const std::string& name,
                                             const pandora::EnergyCorrectionType energyCorrectionType,
                                             const pandora::FloatVector& thetaBinEdges,
                                             const pandora::FloatVector& energyBinEdges,
                                             const pandora::FloatVector& scaleFactors);
 
   /**
-   *  @brief  Evaluate the registered theta-energy correction for a supplied candidate energy
+   *  @brief  Evaluate a named registered theta-energy correction for a supplied candidate energy
    *
+   *  @param  pandora the pandora instance whose table should be used
+   *  @param  name the name/label associated with the energy correction plugin. An empty name selects no table
    *  @param  energyCorrectionType the energy correction type
    *  @param  direction the direction used to determine theta
    *  @param  energy the candidate energy before theta-energy correction
    *
    *  @return corrected candidate energy, or the input energy if no matching theta-energy table is available
    */
-  static float GetThetaEnergyCorrectedEnergy(const pandora::EnergyCorrectionType energyCorrectionType,
+  static float GetThetaEnergyCorrectedEnergy(const pandora::Pandora& pandora, const std::string& name,
+                                             const pandora::EnergyCorrectionType energyCorrectionType,
                                              const pandora::CartesianVector& direction, const float energy);
 
   /**
