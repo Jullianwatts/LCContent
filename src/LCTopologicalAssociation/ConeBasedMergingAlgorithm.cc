@@ -125,7 +125,6 @@ StatusCode ConeBasedMergingAlgorithm::Run() {
 
       if (m_useCorrectedHadronicEnergyForTrackComparison) {
         parentHadronicEnergy = pBestParentCluster->GetCorrectedHadronicEnergy(this->GetPandora());
-        mergedHadronicEnergy = pBestParentCluster->GetHadronicEnergy() + pDaughterCluster->GetHadronicEnergy();
 
         // Use the parent direction as the merged-cluster direction estimate; the daughter has passed the parent-cone
         // test.

@@ -334,6 +334,10 @@ bool LCParticleIdPlugins::LCElectronId::IsMatch(const Cluster* const pCluster) c
   if (showerProfileDiscrepancy < m_profileDiscrepancyForAutoId)
     return true;
 
+  const float eOverPEnergy(m_useCorrectedElectromagneticEnergyForEOverP
+                               ? pCluster->GetCorrectedElectromagneticEnergy(this->GetPandora())
+                               : electromagneticEnergy);
+
   for (TrackList::const_iterator iter = associatedTrackList.begin(), iterEnd = associatedTrackList.end();
        iter != iterEnd; ++iter) {
     const float momentumAtDca((*iter)->GetMomentumAtDca().GetMagnitude());
@@ -341,9 +345,6 @@ bool LCParticleIdPlugins::LCElectronId::IsMatch(const Cluster* const pCluster) c
     if (momentumAtDca < std::numeric_limits<float>::epsilon())
       throw StatusCodeException(STATUS_CODE_FAILURE);
 
-    const float eOverPEnergy(m_useCorrectedElectromagneticEnergyForEOverP
-                                 ? pCluster->GetCorrectedElectromagneticEnergy(this->GetPandora())
-                                 : electromagneticEnergy);
     const float eOverP(eOverPEnergy / momentumAtDca);
 
     if (std::fabs(eOverP - 1.f) < m_maxResidualEOverP)

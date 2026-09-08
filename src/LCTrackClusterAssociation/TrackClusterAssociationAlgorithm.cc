@@ -161,7 +161,7 @@ StatusCode TrackClusterAssociationAlgorithm::Run() {
 
         const float clusterHadronicEnergy(pCluster->GetHadronicEnergy());
         const float trackComparisonEnergy(m_useCorrectedHadronicEnergyForTrackComparison
-                                              ? pCluster->GetCorrectedHadronicEnergy(this->GetPandora())
+                                              ? pCluster->GetTrackComparisonEnergy(this->GetPandora())
                                               : clusterHadronicEnergy);
         const float energyDifference(std::fabs(trackComparisonEnergy - pTrack->GetEnergyAtDca()));
 
