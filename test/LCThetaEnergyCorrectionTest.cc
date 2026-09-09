@@ -143,13 +143,13 @@ void CaseDirection(const Pandora& pandora) {
   CheckClose(Factor(pandora, "Dir", static_cast<float>(M_PI), 50.f), 1.3f, "C3 -z direction -> theta pi");
 
   const float unit(LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(pandora, "Dir", HADRONIC,
-                                                                           CartesianVector(0.f, 0.f, 1.f), 50.f));
+                                                                            CartesianVector(0.f, 0.f, 1.f), 50.f));
   const float scaled(LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(pandora, "Dir", HADRONIC,
-                                                                             CartesianVector(0.f, 0.f, 500.f), 50.f));
+                                                                              CartesianVector(0.f, 0.f, 500.f), 50.f));
   CheckClose(scaled, unit, "C4 direction magnitude does not affect the result");
 
   const float zero(LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(pandora, "Dir", HADRONIC,
-                                                                           CartesianVector(0.f, 0.f, 0.f), 50.f));
+                                                                            CartesianVector(0.f, 0.f, 0.f), 50.f));
   CheckClose(zero, 50.f, "C5 zero-magnitude direction returns the input energy");
 }
 
@@ -173,14 +173,14 @@ void CaseTypeIsolation(const Pandora& pandora) {
   const FloatVector energyEdges{0.f, 100.f};
   const FloatVector factors{3.f};
   if (STATUS_CODE_SUCCESS != LCContent::RegisterNonLinearityEnergyCorrection(pandora, "EmOnly", ELECTROMAGNETIC,
-                                                                            thetaEdges, energyEdges, factors))
+                                                                             thetaEdges, energyEdges, factors))
     throw StatusCodeException(STATUS_CODE_FAILURE);
 
   CheckClose(
       LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(pandora, "EmOnly", HADRONIC, DirAtTheta(1.f), 50.f),
       50.f, "E2 an ELECTROMAGNETIC table is not applied to a HADRONIC query");
   CheckClose(LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(pandora, "EmOnly", ELECTROMAGNETIC,
-                                                                     DirAtTheta(1.f), 50.f),
+                                                                      DirAtTheta(1.f), 50.f),
              150.f, "E2 the ELECTROMAGNETIC table is applied to an ELECTROMAGNETIC query");
 }
 
