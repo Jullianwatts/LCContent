@@ -113,19 +113,20 @@ void CaseLookup(const Pandora& pandora) {
 void CaseOutOfRange(const Pandora& pandora) {
   RegisterAsymmetricTable(pandora);
 
-  CheckClose(Factor(pandora, "Asym", 0.5f, 150.f), 1.0f, "B1 energy above back() -> no correction");
-  CheckClose(Factor(pandora, "Asym", 0.5f, 100.f), 1.0f, "B2 energy exactly at back() -> no correction (>= not >)");
+  CheckClose(Factor(pandora, "Asym", 0.5f, 150.f), 1.3f, "B1 energy above back() -> clamped to the final energy bin");
+  CheckClose(Factor(pandora, "Asym", 0.5f, 100.f), 1.3f,
+             "B2 energy exactly at back() -> clamped to the final energy bin");
   CheckClose(Factor(pandora, "Asym", 0.5f, 99.999f), 1.3f, "B3 energy just below back() -> still corrected");
   CheckClose(Factor(pandora, "Asym", 2.5f, 25.f), 1.0f, "B4 theta above back() -> no correction");
   CheckClose(Factor(pandora, "Asym", 2.0f, 25.f), 1.0f, "B5 theta exactly at back() -> no correction");
 
-  // The cliff, stated as a ratio. This pins CURRENT behaviour; clamping to the edge
-  // bins would make the ratio 1.0 and this assertion is the one to flip.
+  // The energy bins are now clamped at both ends, so the cliff is gone and the
+  // corrected energy is monotonic across the top edge.
   const float below(Corrected(pandora, "Asym", 0.5f, 99.999f));
   const float above(Corrected(pandora, "Asym", 0.5f, 100.001f));
-  std::cout << "  note  B6 discontinuity at the top energy edge: " << below << " -> " << above << " GeV ("
-            << (above / below - 1.f) * 100.f << "% jump for 2 MeV of raw energy)" << std::endl;
-  Check(above < below, "B6 corrected energy DECREASES across the top edge (non-monotonic, factor > 1)");
+  std::cout << "  note  B6 ratio across the top energy edge: " << below << " -> " << above << " GeV ("
+            << (above / below - 1.f) * 100.f << "% change for 2 MeV of raw energy)" << std::endl;
+  Check(above > below, "B6 corrected energy INCREASES across the top edge (monotonic, edge bin clamped)");
 }
 
 // C: direction handling.

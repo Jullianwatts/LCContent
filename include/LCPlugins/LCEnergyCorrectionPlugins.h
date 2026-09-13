@@ -74,8 +74,12 @@ public:
   private:
     /**
      *  @brief  Find the index of the bin containing a supplied value, or -1 if it lies outside the binning
+     *
+     *  @param  edges the bin edges
+     *  @param  value the value to locate
+     *  @param  includeUpperEdge whether a value on or above the final edge belongs to the final bin
      */
-    static int FindBin(const pandora::FloatVector& edges, const float value);
+    static int FindBin(const pandora::FloatVector& edges, const float value, const bool includeUpperEdge);
 
     /**
      *  @brief  Whether a supplied set of values is strictly increasing
@@ -102,6 +106,13 @@ public:
                                             const pandora::FloatVector& thetaBinEdges,
                                             const pandora::FloatVector& energyBinEdges,
                                             const pandora::FloatVector& scaleFactors);
+
+  /**
+   *  @brief  Remove any recorded theta-energy correction tables associated with a pandora instance
+   *
+   *  @param  pandora the pandora instance whose tables should be removed
+   */
+  static void ForgetThetaEnergyCorrections(const pandora::Pandora& pandora);
 
   /**
    *  @brief  Evaluate a named registered theta-energy correction for a supplied candidate energy

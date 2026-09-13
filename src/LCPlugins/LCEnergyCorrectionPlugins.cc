@@ -75,12 +75,20 @@ bool LCEnergyCorrectionPlugins::ThetaEnergyTable::IsInitialized() const { return
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-int LCEnergyCorrectionPlugins::ThetaEnergyTable::FindBin(const FloatVector& edges, const float value) {
+int LCEnergyCorrectionPlugins::ThetaEnergyTable::FindBin(const FloatVector& edges, const float value,
+                                                         const bool includeUpperEdge) {
   if (edges.size() < 2)
     return -1;
 
-  if ((value < edges.front()) || (value >= edges.back()))
+  if (value < edges.front())
     return -1;
+
+  if (value >= edges.back()) {
+    if (!includeUpperEdge)
+      return -1;
+
+    return static_cast<int>(edges.size() - 2);
+  }
 
   for (unsigned int i = 0; i + 1 < edges.size(); ++i) {
     if ((edges.at(i) <= value) && (value < edges.at(i + 1)))
@@ -93,8 +101,8 @@ int LCEnergyCorrectionPlugins::ThetaEnergyTable::FindBin(const FloatVector& edge
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 float LCEnergyCorrectionPlugins::ThetaEnergyTable::GetCorrection(const float theta, const float energy) const {
-  const int thetaBin(FindBin(m_thetaBinEdges, theta));
-  const int energyBin(FindBin(m_energyBinEdges, energy));
+  const int thetaBin(FindBin(m_thetaBinEdges, theta, false));
+  const int energyBin(FindBin(m_energyBinEdges, energy, true));
 
   if ((thetaBin < 0) || (energyBin < 0))
     return 1.f;
@@ -115,6 +123,21 @@ void LCEnergyCorrectionPlugins::RegisterThetaEnergyCorrection(const Pandora& pan
 
   GetThetaEnergyCorrectionTableMap()[ThetaEnergyCorrectionKey(&pandora, name, energyCorrectionType)] =
       ThetaEnergyTable(thetaBinEdges, energyBinEdges, scaleFactors);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void LCEnergyCorrectionPlugins::ForgetThetaEnergyCorrections(const Pandora& pandora) {
+  ThetaEnergyCorrectionTableMap& thetaEnergyCorrectionTableMap(GetThetaEnergyCorrectionTableMap());
+
+  for (ThetaEnergyCorrectionTableMap::iterator iter = thetaEnergyCorrectionTableMap.begin();
+       iter != thetaEnergyCorrectionTableMap.end();) {
+    if (&pandora == std::get<0>(iter->first)) {
+      iter = thetaEnergyCorrectionTableMap.erase(iter);
+    } else {
+      ++iter;
+    }
+  }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
