@@ -12,6 +12,8 @@
 #include "LCHelpers/FragmentRemovalHelper.h"
 #include "LCHelpers/SortingHelper.h"
 
+#include "LCPlugins/LCEnergyCorrectionPlugins.h"
+
 #include "LCTopologicalAssociation/ProximityBasedMergingAlgorithm.h"
 
 using namespace pandora;
@@ -67,9 +69,6 @@ StatusCode ProximityBasedMergingAlgorithm::Run() {
     const unsigned int daughterInnerLayer(pDaughterCluster->GetInnerPseudoLayer());
     const unsigned int daughterOuterLayer(pDaughterCluster->GetOuterPseudoLayer());
     const float daughterHadronicEnergy(pDaughterCluster->GetHadronicEnergy());
-    const float daughterTrackComparisonEnergy(m_useCorrectedEnergyForTrackComparison
-                                                  ? pDaughterCluster->GetTrackComparisonEnergy(this->GetPandora())
-                                                  : daughterHadronicEnergy);
 
     const Cluster* pBestParentCluster(NULL);
     float bestParentHadronicEnergy(0.);
@@ -124,8 +123,17 @@ StatusCode ProximityBasedMergingAlgorithm::Run() {
         float clusterEnergySum(parentHadronicEnergy + daughterHadronicEnergy);
 
         if (m_useCorrectedEnergyForTrackComparison) {
-          parentTrackComparisonEnergy = pParentCluster->GetTrackComparisonEnergy(this->GetPandora());
-          clusterEnergySum = parentTrackComparisonEnergy + daughterTrackComparisonEnergy;
+          // Use the parent direction as the merged-cluster direction estimate for this daughter-candidate test. The
+          // same correction is applied once to each energy, so chi and chi0 remain directly comparable.
+          const CartesianVector& parentDirection(pParentCluster->GetFitToAllHitsResult().IsFitSuccessful()
+                                                     ? pParentCluster->GetFitToAllHitsResult().GetDirection()
+                                                     : pParentCluster->GetInitialDirection());
+
+          parentTrackComparisonEnergy = LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(
+              this->GetPandora(), m_thetaEnergyCorrectionName, pandora::HADRONIC, parentDirection,
+              parentTrackComparisonEnergy);
+          clusterEnergySum = LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(
+              this->GetPandora(), m_thetaEnergyCorrectionName, pandora::HADRONIC, parentDirection, clusterEnergySum);
         }
 
         const float chi((clusterEnergySum - trackEnergySum) / sigmaE);
@@ -333,6 +341,10 @@ StatusCode ProximityBasedMergingAlgorithm::ReadSettings(const TiXmlHandle xmlHan
   PANDORA_RETURN_RESULT_IF_AND_IF(
       STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
       XmlHelper::ReadValue(xmlHandle, "UseCorrectedEnergyForTrackComparison", m_useCorrectedEnergyForTrackComparison));
+
+  PANDORA_RETURN_RESULT_IF_AND_IF(
+      STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
+      XmlHelper::ReadValue(xmlHandle, "ThetaEnergyCorrectionName", m_thetaEnergyCorrectionName));
 
   PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
                                   XmlHelper::ReadValue(xmlHandle, "NGenericDistanceLayers", m_nGenericDistanceLayers));

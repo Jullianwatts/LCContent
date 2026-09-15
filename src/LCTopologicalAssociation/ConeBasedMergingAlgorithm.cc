@@ -11,6 +11,8 @@
 #include "LCHelpers/ClusterHelper.h"
 #include "LCHelpers/SortingHelper.h"
 
+#include "LCPlugins/LCEnergyCorrectionPlugins.h"
+
 #include "LCTopologicalAssociation/ConeBasedMergingAlgorithm.h"
 
 using namespace pandora;
@@ -118,19 +120,25 @@ StatusCode ConeBasedMergingAlgorithm::Run() {
         return STATUS_CODE_FAILURE;
 
       float parentHadronicEnergy(pBestParentCluster->GetHadronicEnergy());
-      float daughterHadronicEnergy(pDaughterCluster->GetHadronicEnergy());
+      float mergedHadronicEnergy(parentHadronicEnergy + pDaughterCluster->GetHadronicEnergy());
 
       if (m_useCorrectedEnergyForTrackComparison) {
-        parentHadronicEnergy = pBestParentCluster->GetTrackComparisonEnergy(this->GetPandora());
-        daughterHadronicEnergy = pDaughterCluster->GetTrackComparisonEnergy(this->GetPandora());
-      }
+        // Use the parent direction as the merged-cluster direction estimate; the daughter has passed the parent-cone
+        // test. The same correction is applied once to each energy, so chi and chi0 remain directly comparable.
+        const CartesianVector& parentDirection(pBestParentCluster->GetFitToAllHitsResult().IsFitSuccessful()
+                                                   ? pBestParentCluster->GetFitToAllHitsResult().GetDirection()
+                                                   : pBestParentCluster->GetInitialDirection());
 
-      const float mergedHadronicEnergy(parentHadronicEnergy + daughterHadronicEnergy);
+        parentHadronicEnergy = LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(
+            this->GetPandora(), m_thetaEnergyCorrectionName, pandora::HADRONIC, parentDirection, parentHadronicEnergy);
+        mergedHadronicEnergy = LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(
+            this->GetPandora(), m_thetaEnergyCorrectionName, pandora::HADRONIC, parentDirection, mergedHadronicEnergy);
+      }
 
       const float chi((mergedHadronicEnergy - trackEnergySum) / sigmaE);
       const float chi0((parentHadronicEnergy - trackEnergySum) / sigmaE);
 
-      if (daughterHadronicEnergy > m_minDaughterHadronicEnergy) {
+      if (pDaughterCluster->GetHadronicEnergy() > m_minDaughterHadronicEnergy) {
         if ((chi > m_maxTrackClusterChi) || ((chi * chi - chi0 * chi0) > m_maxTrackClusterDChi2))
           continue;
       }
@@ -308,6 +316,10 @@ StatusCode ConeBasedMergingAlgorithm::ReadSettings(const TiXmlHandle xmlHandle) 
   PANDORA_RETURN_RESULT_IF_AND_IF(
       STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
       XmlHelper::ReadValue(xmlHandle, "UseCorrectedEnergyForTrackComparison", m_useCorrectedEnergyForTrackComparison));
+
+  PANDORA_RETURN_RESULT_IF_AND_IF(
+      STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
+      XmlHelper::ReadValue(xmlHandle, "ThetaEnergyCorrectionName", m_thetaEnergyCorrectionName));
 
   PANDORA_RETURN_RESULT_IF_AND_IF(
       STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
