@@ -23,11 +23,12 @@ namespace lc_content {
 ProximityBasedMergingAlgorithm::ProximityBasedMergingAlgorithm()
     : m_canMergeMinMipFraction(0.7f), m_canMergeMaxRms(5.f), m_minClusterInnerLayer(6), m_minLayerSpan(-2),
       m_minShowerLayerSpan(-4), m_maxTrackClusterChi(2.5f), m_maxTrackClusterDChi2(1.f),
-      m_useCorrectedEnergyForTrackComparison(false), m_nGenericDistanceLayers(5), m_maxGenericDistance(50.f),
-      m_nAdjacentLayersToExamine(2), m_maxParallelDistance(1000.f), m_maxInnerLayerSeparation(500.f),
-      m_clusterContactThreshold(2.f), m_minContactFraction(0.3f), m_closeHitThreshold(50.f),
-      m_minCloseHitFraction(0.2f), m_maxHelixPathlengthToDaughter(300.f), m_helixDistanceNLayers(20),
-      m_helixDistanceMaxOccupiedLayers(10), m_maxClusterHelixDistance(50.f) {}
+      m_useThetaEnergyCorrectionForTrackComparison(false), m_thetaEnergyCorrectionWarningIssued(false),
+      m_nGenericDistanceLayers(5), m_maxGenericDistance(50.f), m_nAdjacentLayersToExamine(2),
+      m_maxParallelDistance(1000.f), m_maxInnerLayerSeparation(500.f), m_clusterContactThreshold(2.f),
+      m_minContactFraction(0.3f), m_closeHitThreshold(50.f), m_minCloseHitFraction(0.2f),
+      m_maxHelixPathlengthToDaughter(300.f), m_helixDistanceNLayers(20), m_helixDistanceMaxOccupiedLayers(10),
+      m_maxClusterHelixDistance(50.f) {}
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -35,6 +36,16 @@ StatusCode ProximityBasedMergingAlgorithm::Run() {
   // Begin by recalculating track-cluster associations
   PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=,
                            PandoraContentApi::RunDaughterAlgorithm(*this, m_trackClusterAssociationAlgName));
+
+  // A named table that was never registered cannot be detected in ReadSettings, as registration may happen later, so
+  // warn once here rather than silently applying no correction.
+  if (m_useThetaEnergyCorrectionForTrackComparison && !m_thetaEnergyCorrectionWarningIssued &&
+      !LCEnergyCorrectionPlugins::HasThetaEnergyCorrection(this->GetPandora(), m_thetaEnergyCorrectionName,
+                                                           pandora::HADRONIC)) {
+    std::cout << "ProximityBasedMergingAlgorithm: no theta-energy correction registered with name '"
+              << m_thetaEnergyCorrectionName << "', track comparison energies will be left uncorrected" << std::endl;
+    m_thetaEnergyCorrectionWarningIssued = true;
+  }
 
   const ClusterList* pClusterList = NULL;
   PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*this, pClusterList));
@@ -122,7 +133,7 @@ StatusCode ProximityBasedMergingAlgorithm::Run() {
         float parentTrackComparisonEnergy(parentHadronicEnergy);
         float clusterEnergySum(parentHadronicEnergy + daughterHadronicEnergy);
 
-        if (m_useCorrectedEnergyForTrackComparison) {
+        if (m_useThetaEnergyCorrectionForTrackComparison) {
           // Use the parent direction as the merged-cluster direction estimate for this daughter-candidate test. The
           // same correction is applied once to each energy, so chi and chi0 remain directly comparable.
           const CartesianVector& parentDirection(pParentCluster->GetFitToAllHitsResult().IsFitSuccessful()
@@ -338,13 +349,18 @@ StatusCode ProximityBasedMergingAlgorithm::ReadSettings(const TiXmlHandle xmlHan
   PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
                                   XmlHelper::ReadValue(xmlHandle, "MaxTrackClusterDChi2", m_maxTrackClusterDChi2));
 
-  PANDORA_RETURN_RESULT_IF_AND_IF(
-      STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
-      XmlHelper::ReadValue(xmlHandle, "UseCorrectedEnergyForTrackComparison", m_useCorrectedEnergyForTrackComparison));
+  PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
+                                  XmlHelper::ReadValue(xmlHandle, "UseThetaEnergyCorrectionForTrackComparison",
+                                                       m_useThetaEnergyCorrectionForTrackComparison));
 
   PANDORA_RETURN_RESULT_IF_AND_IF(
       STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
       XmlHelper::ReadValue(xmlHandle, "ThetaEnergyCorrectionName", m_thetaEnergyCorrectionName));
+
+  // The correction can only be applied if a table has been named, so reject the combination outright rather than
+  // letting the flag silently do nothing.
+  if (m_useThetaEnergyCorrectionForTrackComparison && m_thetaEnergyCorrectionName.empty())
+    return STATUS_CODE_INVALID_PARAMETER;
 
   PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=,
                                   XmlHelper::ReadValue(xmlHandle, "NGenericDistanceLayers", m_nGenericDistanceLayers));

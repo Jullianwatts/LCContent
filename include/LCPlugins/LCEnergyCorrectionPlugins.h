@@ -115,6 +115,18 @@ public:
   static void ForgetThetaEnergyCorrections(const pandora::Pandora& pandora);
 
   /**
+   *  @brief  Whether a named theta-energy correction is registered with a pandora instance
+   *
+   *  @param  pandora the pandora instance whose table should be used
+   *  @param  name the name/label associated with the energy correction plugin
+   *  @param  energyCorrectionType the energy correction type
+   *
+   *  @return whether a matching theta-energy table is available
+   */
+  static bool HasThetaEnergyCorrection(const pandora::Pandora& pandora, const std::string& name,
+                                       const pandora::EnergyCorrectionType energyCorrectionType);
+
+  /**
    *  @brief  Evaluate a named registered theta-energy correction for a supplied candidate energy
    *
    *  @param  pandora the pandora instance whose table should be used
@@ -152,6 +164,11 @@ public:
      */
     NonLinearityCorrection(const pandora::FloatVector& thetaBinEdges, const pandora::FloatVector& energyBinEdges,
                            const pandora::FloatVector& scaleFactors);
+
+    /**
+     *  @brief  Destructor, discarding any theta-energy tables registered with the associated pandora instance
+     */
+    ~NonLinearityCorrection();
 
     pandora::StatusCode MakeEnergyCorrections(const pandora::Cluster* const pCluster, float& correctedEnergy) const;
 

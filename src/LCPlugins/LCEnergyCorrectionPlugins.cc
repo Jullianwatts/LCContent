@@ -142,6 +142,19 @@ void LCEnergyCorrectionPlugins::ForgetThetaEnergyCorrections(const Pandora& pand
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+bool LCEnergyCorrectionPlugins::HasThetaEnergyCorrection(const Pandora& pandora, const std::string& name,
+                                                         const EnergyCorrectionType energyCorrectionType) {
+  if (name.empty())
+    return false;
+
+  const ThetaEnergyCorrectionTableMap& thetaEnergyCorrectionTableMap(GetThetaEnergyCorrectionTableMap());
+
+  return (thetaEnergyCorrectionTableMap.end() !=
+          thetaEnergyCorrectionTableMap.find(ThetaEnergyCorrectionKey(&pandora, name, energyCorrectionType)));
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 float LCEnergyCorrectionPlugins::GetThetaEnergyCorrectedEnergy(const Pandora& pandora, const std::string& name,
                                                                const EnergyCorrectionType energyCorrectionType,
                                                                const CartesianVector& direction, const float energy) {
@@ -192,6 +205,15 @@ LCEnergyCorrectionPlugins::NonLinearityCorrection::NonLinearityCorrection(const 
                                                                           const FloatVector& energyBinEdges,
                                                                           const FloatVector& scaleFactors)
     : m_thetaEnergyTable(thetaBinEdges, energyBinEdges, scaleFactors) {}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+LCEnergyCorrectionPlugins::NonLinearityCorrection::~NonLinearityCorrection() {
+  // Discard the theta-energy tables held for this pandora instance. The plugins associated with an instance are all
+  // destroyed together, so clearing the instance's tables here leaves nothing behind once the instance goes away.
+  if (NULL != m_pPandora)
+    ForgetThetaEnergyCorrections(*m_pPandora);
+}
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
